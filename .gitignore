@@ -1,0 +1,43 @@
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+nupkg/
+
+# Visual Studio Code
+.vscode
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.nupkg
+*.exe
+
+# Build results
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+.vs/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+/.vs/ProjectSettings.json
+/.vs/mso-dotnet/DesignTimeBuild/.dtbcache.v2
+/src/Entrance/MSO.Sample/Logs
+/src/Entrance/MSO.Sample/wwwroot
+/.vs
+/.idea
+/src/Entrance/MSO.MinimalAPI/Properties/PublishProfiles
+
+# Xml Doc
+MSO.*.xml
+publish/dist

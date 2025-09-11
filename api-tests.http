@@ -1,0 +1,68 @@
+### 获取所有航班
+GET http://localhost:5130/api/flights
+
+### 获取特定航班
+GET http://localhost:5130/api/flights/1
+
+### 根据条件搜索航班
+GET http://localhost:5130/api/flights?origin=北京&destination=上海
+
+### 创建新航班
+POST http://localhost:5130/api/flights
+Content-Type: application/json
+
+{
+  "flightNumber": "CX1001",
+  "origin": "香港",
+  "destination": "北京",
+  "departureTime": "2025-01-15T10:00:00",
+  "arrivalTime": "2025-01-15T13:30:00",
+  "price": 1200.00,
+  "availableSeats": 200,
+  "totalSeats": 250,
+  "aircraft": "Boeing 777-300"
+}
+
+### 检查航班可用性
+GET http://localhost:5130/api/flights/1/availability?passengers=2
+
+### 获取活跃订阅
+GET http://localhost:5130/api/subscriptions/active
+
+### 获取客户订阅
+GET http://localhost:5130/api/subscriptions/customer/1
+
+### 创建新订阅
+POST http://localhost:5130/api/subscriptions
+Content-Type: application/json
+
+{
+  "customerId": 1,
+  "origin": "深圳",
+  "destination": "上海",
+  "maxPrice": 800.00,
+  "emailNotifications": true,
+  "smsNotifications": false
+}
+
+### 订单：创建
+POST http://localhost:5130/api/orders
+Content-Type: application/json
+
+{
+  "bookingNumber": "BK20250910-001",
+  "passengerName": "张三",
+  "flightNumber": "MU5123",
+  "departureTime": "2025-09-20T09:30:00Z",
+  "quantity": 2,
+  "unitPrice": 899.00
+}
+
+### 订单：按 Id 获取（替换 {id}）
+GET http://localhost:5130/api/orders/{id}
+
+### 订单：确认（替换 {id}）
+POST http://localhost:5130/api/orders/{id}/confirm
+
+### 订单：取消（替换 {id}）
+POST http://localhost:5130/api/orders/{id}/cancel

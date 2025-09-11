@@ -1,0 +1,61 @@
+### 机票预订系统 API 测试
+
+### 获取所有活跃机场
+GET http://localhost:5130/api/FlightBooking/airports
+Accept: application/json
+
+###
+
+### 搜索航班 - 北京到上海
+GET http://localhost:5130/api/FlightBooking/flights/search?departureAirport=PEK&arrivalAirport=SHA&departureDate=2024-12-15
+Accept: application/json
+
+###
+
+### 搜索航班 - 上海到广州  
+GET http://localhost:5130/api/FlightBooking/flights/search?departureAirport=SHA&arrivalAirport=CAN&departureDate=2024-12-15
+Accept: application/json
+
+###
+
+### 创建机票预订
+POST http://localhost:5130/api/FlightBooking/bookings
+Content-Type: application/json
+
+{
+  "flightId": "{{flightId}}",
+  "passengerFirstName": "张",
+  "passengerLastName": "三",
+  "passengerEmail": "zhangsan@example.com",
+  "passportNumber": "E12345678",
+  "dateOfBirth": "1990-01-15",
+  "nationality": "中国",
+  "seatsCount": 1,
+  "cabinClass": 0
+}
+
+###
+
+### 根据预订参考号查询预订
+GET http://localhost:5130/api/FlightBooking/bookings/{{bookingReference}}
+Accept: application/json
+
+###
+
+### 确认预订
+POST http://localhost:5130/api/FlightBooking/bookings/{{bookingReference}}/confirm
+Content-Type: application/json
+
+###
+
+### 取消预订
+POST http://localhost:5130/api/FlightBooking/bookings/{{bookingReference}}/cancel
+Content-Type: application/json
+
+###
+
+### 获取乘客的所有预订
+GET http://localhost:5130/api/FlightBooking/passengers/{{passengerId}}/bookings
+Accept: application/json
+
+###

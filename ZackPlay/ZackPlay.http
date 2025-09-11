@@ -1,6 +1,0 @@
-@ZackPlay_HostAddress = http://localhost:5130
-
-GET {{ZackPlay_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

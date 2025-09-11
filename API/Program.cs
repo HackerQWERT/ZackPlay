@@ -28,7 +28,7 @@ if (app.Environment.IsDevelopment())
     {
         options
             .WithTitle("Flight Booking API")
-            .WithTheme(ScalarTheme.DeepSpace)
+            .WithTheme(ScalarTheme.BluePlanet)
             .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
     });
 }

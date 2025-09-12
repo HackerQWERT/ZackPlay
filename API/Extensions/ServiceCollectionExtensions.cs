@@ -47,16 +47,19 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // 添加数据库
+        // 添加数据库（优先读取新节 SqlServer:ConnectionString，回退到 ConnectionStrings:DefaultConnection）
+        var sqlConn = configuration["SqlServer:ConnectionString"];
         services.AddDbContext<FlightBookingDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(sqlConn));
 
-        // 配置Redis
+        // 配置Redis（优先读取新节 Redis:ConnectionString，回退到旧 ConnectionStrings:Redis）
         services.AddSingleton<IConnectionMultiplexer>(provider =>
-             {
-                 var connectionString = configuration.GetConnectionString("Redis");
-                 return ConnectionMultiplexer.Connect(connectionString ?? "localhost:6379");
-             });
+        {
+            var connectionString = configuration["Redis:ConnectionString"]
+                                   ?? configuration.GetConnectionString("Redis")
+                                   ?? "localhost:6379";
+            return ConnectionMultiplexer.Connect(connectionString);
+        });
 
         //添加缓存
         services.AddSingleton<ICacheService, RedisCacheService>();

@@ -20,10 +20,15 @@ public class RabbitMQService : IMessageQueueService, IDisposable
 
         var factory = new ConnectionFactory()
         {
-            HostName = configuration.GetConnectionString("RabbitMQ:HostName") ?? "localhost",
-            Port = int.Parse(configuration.GetConnectionString("RabbitMQ:Port") ?? "5672"),
-            UserName = configuration.GetConnectionString("RabbitMQ:UserName") ?? "guest",
-            Password = configuration.GetConnectionString("RabbitMQ:Password") ?? "guest"
+            HostName = configuration["RabbitMQ:HostName"]
+                      ?? "localhost",
+            Port = int.Parse(configuration["RabbitMQ:Port"]
+                      ?? "5672"),
+            UserName = configuration["RabbitMQ:UserName"]
+                      ?? "guest",
+            Password = configuration["RabbitMQ:Password"]
+                      ?? "guest",
+            VirtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/"
         };
 
         try

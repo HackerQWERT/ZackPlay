@@ -5,7 +5,7 @@ namespace Domain.FlightBooking.Entities;
 /// <summary>
 /// 机场实体
 /// </summary>
-public class Airport
+public class Airport : IAggregateRoot
 {
     public string Code { get; private set; } = default!; // 机场三字码，如 PEK, SHA
     public string Name { get; private set; } = default!; // 机场名称

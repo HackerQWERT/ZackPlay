@@ -1,6 +1,7 @@
 using Domain.FlightBooking.Entities;
 using Domain.FlightBooking.Repositories;
 using Domain.FlightBooking.ValueObjects;
+using Domain.FlightBooking.Services;
 
 namespace Application.FlightBooking;
 
@@ -33,17 +34,20 @@ public class FlightBookingService : IFlightBookingService
     private readonly IFlightRepository _flightRepository;
     private readonly IPassengerRepository _passengerRepository;
     private readonly IFlightBookingRepository _bookingRepository;
+    private readonly IBookingDomainService _bookingDomainService;
 
     public FlightBookingService(
         IAirportRepository airportRepository,
         IFlightRepository flightRepository,
         IPassengerRepository passengerRepository,
-        IFlightBookingRepository bookingRepository)
+        IFlightBookingRepository bookingRepository,
+        IBookingDomainService bookingDomainService)
     {
         _airportRepository = airportRepository;
         _flightRepository = flightRepository;
         _passengerRepository = passengerRepository;
         _bookingRepository = bookingRepository;
+        _bookingDomainService = bookingDomainService;
     }
 
     public async Task<IEnumerable<Airport>> GetActiveAirportsAsync()
@@ -58,46 +62,19 @@ public class FlightBookingService : IFlightBookingService
 
     public async Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateBookingRequest request)
     {
-        // 检查航班是否存在
-        var flight = await _flightRepository.GetByIdAsync(request.FlightId);
-        if (flight == null)
-            throw new InvalidOperationException("Flight not found");
-
-        // 检查是否有足够的座位 (简化检查)
-        var currentBookings = await _bookingRepository.GetBookingCountByFlightAsync(request.FlightId);
-        if (currentBookings + request.SeatsCount > flight.TotalSeats)
-            throw new InvalidOperationException("Not enough available seats");
-
-        // 查找或创建乘客
-        var passenger = await _passengerRepository.GetByPassportAsync(request.PassportNumber);
-        if (passenger == null)
-        {
-            passenger = new Passenger(
-                request.PassengerFirstName,
-                request.PassengerLastName,
-                request.DateOfBirth,
-                Gender.Other, // 默认值，应该从请求中获取
-                request.PassportNumber,
-                request.Nationality, // 护照国家，简化处理
-                DateTime.UtcNow.AddYears(10), // 默认护照有效期，应该从请求中获取
-                request.Nationality,
-                request.PassengerEmail,
-                "" // 电话号码，应该从请求中获取
-            );
-            await _passengerRepository.AddAsync(passenger);
-        }
-
-        // 创建预订
-        var booking = new Domain.FlightBooking.Entities.FlightBooking(
-            GenerateBookingReference(),
+        var command = new CreateBookingCommand(
             request.FlightId,
-            passenger.Id,
+            request.PassengerFirstName,
+            request.PassengerLastName,
+            request.PassengerEmail,
+            request.PassportNumber,
+            request.DateOfBirth,
+            request.Nationality,
             request.SeatsCount,
-            request.CabinClass,
-            flight.BasePrice // 简化价格计算
+            request.CabinClass
         );
 
-        await _bookingRepository.AddAsync(booking);
+        var booking = await _bookingDomainService.CreateBookingAsync(command);
         return booking;
     }
 
@@ -135,7 +112,7 @@ public class FlightBookingService : IFlightBookingService
 
     private string GenerateBookingReference()
     {
-        // 生成6位随机字母数字组合
+        // 保留方法以兼容已有签名（不再使用）
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var random = new Random();
         return new string(Enumerable.Repeat(chars, 6)

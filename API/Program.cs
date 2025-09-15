@@ -9,8 +9,8 @@ builder.Host.ConfigureLogging(builder.Configuration);
 // ASP.NET Core 基础服务
 builder.Services.AddControllers();
 
-// 添加 OpenAPI 和 Scalar
-builder.Services.AddOpenApi();
+// 添加 OpenAPI + Bearer 安全方案 + XML 注释
+builder.Services.AddOpenApiWithAuthAndXmlComments();
 
 // 注册所有服务 (Infrastructure + Application + Api)
 builder.Services.AddAllServices(builder.Configuration);
@@ -24,13 +24,7 @@ await app.InitializeDatabaseAsync();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference(options =>
-    {
-        options
-            .WithTitle("Flight Booking API")
-            .WithTheme(ScalarTheme.BluePlanet)
-            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    });
+    app.MapScalarWithAuth();
 }
 
 app.UseHttpsRedirection();

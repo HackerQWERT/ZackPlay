@@ -6,7 +6,7 @@ namespace Domain.FlightBooking.Entities;
 /// <summary>
 /// 航班实体
 /// </summary>
-public class Flight
+public class Flight : IAggregateRoot
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public string FlightNumber { get; private set; } = default!; // 航班号，如 CZ3456

@@ -11,6 +11,8 @@ using Domain.Abstractions;
 using Domain.FlightBooking.Repositories;
 using Mapster;
 using Infrastructure.Mapping;
+using Application.Mapping;
+using Domain.FlightBooking.Services;
 
 namespace ZackPlay.Extensions;
 
@@ -21,9 +23,12 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddAllServices(this IServiceCollection services, IConfiguration configuration)
     {
+        // 领域层服务
+        services.AddDomainServices();
 
         // 应用层服务
         services.AddApplicationServices();
+
         // 基础设施服务          
         services.AddInfrastructureServices(configuration);
 
@@ -34,6 +39,8 @@ public static class ServiceCollectionExtensions
     #region 私有方法
 
 
+
+
     /// <summary>
     /// 配置应用层服务 - 机票预订业务
     /// </summary>
@@ -41,6 +48,21 @@ public static class ServiceCollectionExtensions
     {
         // 注册应用层服务
         services.AddScoped<Application.FlightBooking.IFlightBookingService, Application.FlightBooking.FlightBookingService>();
+
+        // 配置应用层 Mapster 映射
+        SimplifiedMappingProfile.Configure();
+
+        return services;
+    }
+
+    /// <summary>
+    /// 配置领域层服务 - 机票预订业务
+    /// </summary>
+    private static IServiceCollection AddDomainServices(this IServiceCollection services)
+    {
+        // 注册领域服务
+        services.AddScoped<IBookingDomainService, BookingDomainService>();
+
 
         return services;
     }

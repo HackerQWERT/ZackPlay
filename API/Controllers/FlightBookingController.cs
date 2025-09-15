@@ -1,110 +1,153 @@
 using Microsoft.AspNetCore.Mvc;
+using Application.Contracts;
+using Application.FlightBooking;
+using Mapster;
+using Domain.FlightBooking.ValueObjects;
 
 namespace ZackPlay.API.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
-[Tags("Flight Booking v1")]
-public class FlightBookingV1Controller : ControllerBase
+[Route("api/[controller]/[action]")]
+public class FlightBookingController : ControllerBase
 {
-    /// <summary>
-    /// Get all flight bookings - Version 1
-    /// </summary>
-    [HttpGet]
-    public IActionResult GetFlightBookings()
+    private readonly IFlightBookingService _service;
+
+    public FlightBookingController(IFlightBookingService service)
     {
-        return Ok(new
-        {
-            Version = "1.0",
-            Message = "Flight bookings from API v1",
-            Data = new[] { "Booking1", "Booking2" }
-        });
+        _service = service;
     }
 
     /// <summary>
-    /// Create a new flight booking - Version 1
+    /// 获取可用机场列表
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<AirportResponse>>> Airports()
+    {
+        var airports = await _service.GetActiveAirportsAsync();
+        var result = airports.Adapt<IEnumerable<AirportResponse>>();
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// 搜索航班（简单查询）
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<FlightSearchResponse>>> Search([FromQuery] string from, [FromQuery] string to, [FromQuery] string date)
+    {
+        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to) || string.IsNullOrWhiteSpace(date))
+            return BadRequest("查询参数不完整");
+
+        if (!DateTime.TryParse(date, out var departureDate))
+            return BadRequest("日期格式不正确");
+
+        var flights = await _service.SearchFlightsAsync(from, to, departureDate);
+        var result = flights.Adapt<IEnumerable<FlightSearchResponse>>();
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// 搜索航班（复杂请求体）
     /// </summary>
     [HttpPost]
-    public IActionResult CreateFlightBooking([FromBody] object booking)
+    public async Task<ActionResult<IEnumerable<FlightSearchResponse>>> Search([FromBody] FlightSearchRequest request)
     {
-        return Ok(new
-        {
-            Version = "1.0",
-            Message = "Booking created via API v1",
-            BookingId = 123
-        });
+        if (!DateTime.TryParse(request.DepartureDate, out var departureDate))
+            return BadRequest("DepartureDate 格式不正确");
+
+        var flights = await _service.SearchFlightsAsync(request.From, request.To, departureDate);
+        var result = flights.Adapt<IEnumerable<FlightSearchResponse>>();
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// 创建预订（包含乘客信息）
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<FlightBookingResponse>> Create([FromBody] CreateFlightBookingRequest request)
+    {
+        if (request.Passenger is null)
+            return BadRequest("缺少乘客信息");
+
+        var create = new CreateBookingRequest(
+            request.FlightId,
+            request.Passenger.FirstName,
+            request.Passenger.LastName,
+            request.Passenger.Email,
+            request.Passenger.PassportNumber,
+            request.Passenger.DateOfBirth,
+            request.Passenger.Nationality,
+            request.SeatsCount,
+            ParseCabinClass(request.CabinClass)
+        );
+
+        var booking = await _service.CreateBookingAsync(create);
+        var response = booking.Adapt<FlightBookingResponse>();
+
+        return CreatedAtAction(nameof(GetByReference), new { reference = booking.BookingReference }, response);
+    }
+
+    /// <summary>
+    /// 通过预订参考号查询预订
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<FlightBookingResponse>> GetByReference([FromQuery] string reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+            return BadRequest("reference 不能为空");
+
+        var booking = await _service.GetBookingAsync(reference);
+        if (booking is null) return NotFound();
+
+        var response = booking.Adapt<FlightBookingResponse>();
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// 确认预订
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<FlightBookingResponse>> Confirm([FromQuery] string reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+            return BadRequest("reference 不能为空");
+
+        var booking = await _service.ConfirmBookingAsync(reference);
+        var response = booking.Adapt<FlightBookingResponse>();
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// 取消预订
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<FlightBookingResponse>> Cancel([FromQuery] string reference, [FromQuery] string? reason = null)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+            return BadRequest("reference 不能为空");
+
+        var booking = await _service.CancelBookingAsync(reference);
+        var response = booking.Adapt<FlightBookingResponse>();
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// 查询某乘客的所有预订
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<FlightBookingResponse>>> PassengerBookings([FromQuery] Guid passengerId)
+    {
+        if (passengerId == Guid.Empty) return BadRequest("passengerId 不能为空");
+
+        var bookings = await _service.GetPassengerBookingsAsync(passengerId);
+        var result = bookings.Adapt<IEnumerable<FlightBookingResponse>>();
+        return Ok(result);
+    }
+
+    private static CabinClass ParseCabinClass(string input)
+    {
+        if (Enum.TryParse<CabinClass>(input, true, out var parsed))
+            return parsed;
+        return CabinClass.Economy;
     }
 }
 
-[ApiController]
-[Route("api/v2/[controller]")]
-[Tags("Flight Booking v2")]
-public class FlightBookingV2Controller : ControllerBase
-{
-    /// <summary>
-    /// Get all flight bookings - Version 2 (Enhanced)
-    /// </summary>
-    [HttpGet]
-    public IActionResult GetFlightBookings()
-    {
-        return Ok(new
-        {
-            Version = "2.0",
-            Message = "Enhanced flight bookings from API v2",
-            Data = new[]
-            {
-                new { Id = 1, BookingRef = "FB001", Status = "Confirmed", CreatedAt = DateTime.UtcNow.AddDays(-1) },
-                new { Id = 2, BookingRef = "FB002", Status = "Pending", CreatedAt = DateTime.UtcNow.AddHours(-2) }
-            },
-            Meta = new
-            {
-                TotalCount = 2,
-                ApiVersion = "2.0",
-                LastUpdated = DateTime.UtcNow
-            }
-        });
-    }
-
-    /// <summary>
-    /// Create a new flight booking - Version 2 (Enhanced)
-    /// </summary>
-    [HttpPost]
-    public IActionResult CreateFlightBooking([FromBody] object booking)
-    {
-        return Ok(new
-        {
-            Version = "2.0",
-            Message = "Enhanced booking created via API v2",
-            BookingId = 456,
-            Status = "Confirmed",
-            Timestamp = DateTime.UtcNow,
-            Tracking = new
-            {
-                Reference = "TRK-456",
-                EstimatedProcessing = "2-3 business days"
-            }
-        });
-    }
-
-    /// <summary>
-    /// Cancel a flight booking - New in Version 2
-    /// </summary>
-    [HttpDelete("{id}")]
-    public IActionResult CancelFlightBooking(int id)
-    {
-        return Ok(new
-        {
-            Version = "2.0",
-            Message = $"Booking {id} cancelled successfully",
-            BookingId = id,
-            Status = "Cancelled",
-            Timestamp = DateTime.UtcNow,
-            RefundInfo = new
-            {
-                RefundAmount = 150.00,
-                RefundMethod = "Original payment method",
-                ProcessingTime = "5-7 business days"
-            }
-        });
-    }
-}

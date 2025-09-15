@@ -6,7 +6,7 @@ namespace Domain.FlightBooking.Entities;
 /// <summary>
 /// 乘客实体
 /// </summary>
-public class Passenger
+public class Passenger : IAggregateRoot
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public string FirstName { get; private set; } = default!;

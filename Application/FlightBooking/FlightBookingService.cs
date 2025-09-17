@@ -1,7 +1,9 @@
+using Application.Contracts;
 using Domain.FlightBooking.Entities;
 using Domain.FlightBooking.Repositories;
-using Domain.FlightBooking.ValueObjects;
 using Domain.FlightBooking.Services;
+using Domain.FlightBooking.ValueObjects;
+using Domain.Abstractions;
 
 namespace Application.FlightBooking;
 
@@ -9,113 +11,123 @@ public interface IFlightBookingService
 {
     Task<IEnumerable<Airport>> GetActiveAirportsAsync();
     Task<IEnumerable<Flight>> SearchFlightsAsync(string departureAirport, string arrivalAirport, DateTime departureDate);
-    Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateBookingRequest request);
+    Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateFlightBookingRequest request);
+    Task<Guid> SubmitBookingAsync(CreateFlightBookingRequest request);
     Task<Domain.FlightBooking.Entities.FlightBooking?> GetBookingAsync(string bookingReference);
     Task<Domain.FlightBooking.Entities.FlightBooking> ConfirmBookingAsync(string bookingReference);
     Task<Domain.FlightBooking.Entities.FlightBooking> CancelBookingAsync(string bookingReference);
     Task<IEnumerable<Domain.FlightBooking.Entities.FlightBooking>> GetPassengerBookingsAsync(Guid passengerId);
 }
 
-public record CreateBookingRequest(
-    Guid FlightId,
-    string PassengerFirstName,
-    string PassengerLastName,
-    string PassengerEmail,
-    string PassportNumber,
-    DateTime DateOfBirth,
-    string Nationality,
-    int SeatsCount,
-    CabinClass CabinClass
-);
-
 public class FlightBookingService : IFlightBookingService
 {
     private readonly IAirportRepository _airportRepository;
     private readonly IFlightRepository _flightRepository;
-    private readonly IPassengerRepository _passengerRepository;
+    private readonly IPassengerRepository _passengerRepository; // 领域服务内部可能用到
     private readonly IFlightBookingRepository _bookingRepository;
     private readonly IBookingDomainService _bookingDomainService;
+    private readonly IMessageQueueService _messageQueueService;
 
     public FlightBookingService(
         IAirportRepository airportRepository,
         IFlightRepository flightRepository,
         IPassengerRepository passengerRepository,
         IFlightBookingRepository bookingRepository,
-        IBookingDomainService bookingDomainService)
+        IBookingDomainService bookingDomainService,
+        IMessageQueueService messageQueueService)
     {
         _airportRepository = airportRepository;
         _flightRepository = flightRepository;
         _passengerRepository = passengerRepository;
         _bookingRepository = bookingRepository;
         _bookingDomainService = bookingDomainService;
+        _messageQueueService = messageQueueService;
     }
 
-    public async Task<IEnumerable<Airport>> GetActiveAirportsAsync()
-    {
-        return await _airportRepository.GetActivateAirportsAsync();
-    }
+    public async Task<IEnumerable<Airport>> GetActiveAirportsAsync() => await _airportRepository.GetActivateAirportsAsync();
 
     public async Task<IEnumerable<Flight>> SearchFlightsAsync(string departureAirport, string arrivalAirport, DateTime departureDate)
-    {
-        return await _flightRepository.SearchAsync(departureAirport, arrivalAirport, departureDate);
-    }
+        => await _flightRepository.SearchAsync(departureAirport, arrivalAirport, departureDate);
 
-    public async Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateBookingRequest request)
+    public async Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateFlightBookingRequest request)
     {
+        if (request.Passenger is null)
+            throw new ArgumentException("Passenger 信息不能为空", nameof(request));
+
+        var cabin = Enum.TryParse<CabinClass>(request.CabinClass, true, out var parsed) ? parsed : CabinClass.Economy;
+
         var command = new CreateBookingCommand(
             request.FlightId,
-            request.PassengerFirstName,
-            request.PassengerLastName,
-            request.PassengerEmail,
+            request.Passenger.FirstName,
+            request.Passenger.LastName,
+            request.Passenger.Email,
             request.PassportNumber,
             request.DateOfBirth,
             request.Nationality,
             request.SeatsCount,
-            request.CabinClass
+            cabin
         );
 
         var booking = await _bookingDomainService.CreateBookingAsync(command);
+        await PublishDomainEventsAsync(booking);
         return booking;
     }
 
-    public async Task<Domain.FlightBooking.Entities.FlightBooking?> GetBookingAsync(string bookingReference)
+    public async Task<Guid> SubmitBookingAsync(CreateFlightBookingRequest request)
     {
-        return await _bookingRepository.GetByReferenceAsync(bookingReference);
+        if (request.Passenger is null)
+            throw new ArgumentException("Passenger 信息不能为空", nameof(request));
+
+        var requestId = Guid.NewGuid();
+        var submitEvent = new Domain.FlightBooking.Events.FlightBookingSubmitedEvent(
+                requestId,
+                request.FlightId,
+                request.Passenger.FirstName,
+                request.Passenger.LastName,
+                request.Passenger.Email,
+                request.PassportNumber,
+                request.DateOfBirth,
+                request.Nationality,
+                request.SeatsCount,
+                request.CabinClass,
+                DateTime.UtcNow
+            );
+        await _messageQueueService.PublishAsync("submit-booking", submitEvent);
+        return requestId;
     }
 
     public async Task<Domain.FlightBooking.Entities.FlightBooking> ConfirmBookingAsync(string bookingReference)
     {
-        var booking = await _bookingRepository.GetByReferenceAsync(bookingReference);
-        if (booking == null)
-            throw new InvalidOperationException("Booking not found");
-
+        var booking = await _bookingRepository.GetByReferenceAsync(bookingReference) ?? throw new InvalidOperationException("Booking not found");
         booking.Confirm();
         await _bookingRepository.UpdateAsync(booking);
+        await PublishDomainEventsAsync(booking);
         return booking;
     }
 
     public async Task<Domain.FlightBooking.Entities.FlightBooking> CancelBookingAsync(string bookingReference)
     {
-        var booking = await _bookingRepository.GetByReferenceAsync(bookingReference);
-        if (booking == null)
-            throw new InvalidOperationException("Booking not found");
-
+        var booking = await _bookingRepository.GetByReferenceAsync(bookingReference) ?? throw new InvalidOperationException("Booking not found");
         booking.Cancel("User requested cancellation");
         await _bookingRepository.UpdateAsync(booking);
+        await PublishDomainEventsAsync(booking);
         return booking;
     }
 
-    public async Task<IEnumerable<Domain.FlightBooking.Entities.FlightBooking>> GetPassengerBookingsAsync(Guid passengerId)
-    {
-        return await _bookingRepository.GetByPassengerAsync(passengerId);
-    }
+    public async Task<Domain.FlightBooking.Entities.FlightBooking?> GetBookingAsync(string bookingReference) => await _bookingRepository.GetByReferenceAsync(bookingReference);
 
-    private string GenerateBookingReference()
+    public async Task<IEnumerable<Domain.FlightBooking.Entities.FlightBooking>> GetPassengerBookingsAsync(Guid passengerId)
+        => await _bookingRepository.GetByPassengerAsync(passengerId);
+
+    private async Task PublishDomainEventsAsync(IAggregateRoot aggregate)
     {
-        // 保留方法以兼容已有签名（不再使用）
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        return new string(Enumerable.Repeat(chars, 6)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
+        if (aggregate.DomainEvents?.Any() == true)
+        {
+            foreach (var domainEvent in aggregate.DomainEvents)
+            {
+                await _messageQueueService.PublishAsync("domain-events", domainEvent);
+            }
+            aggregate.ClearDomainEvents();
+        }
     }
 }

@@ -13,6 +13,7 @@ using Mapster;
 using Infrastructure.Mapping;
 using Application.Mapping;
 using Domain.FlightBooking.Services;
+using API.Consumers;
 
 namespace ZackPlay.Extensions;
 
@@ -32,6 +33,8 @@ public static class ServiceCollectionExtensions
         // 基础设施服务          
         services.AddInfrastructureServices(configuration);
 
+        // API 层服务
+        services.AddApiServices();
 
         return services;
     }
@@ -39,7 +42,17 @@ public static class ServiceCollectionExtensions
     #region 私有方法
 
 
+    /// <summary>
+    /// 配置应用层服务 - 机票预订业务
+    /// </summary>
+    private static IServiceCollection AddApiServices(this IServiceCollection services)
+    {
 
+        // 注册后台服务
+        services.AddHostedService<FlightBookingConsumer>();
+
+        return services;
+    }
 
     /// <summary>
     /// 配置应用层服务 - 机票预订业务

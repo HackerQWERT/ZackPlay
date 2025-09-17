@@ -68,19 +68,7 @@ public class FlightBookingController : ControllerBase
         if (request.Passenger is null)
             return BadRequest("缺少乘客信息");
 
-        var create = new CreateBookingRequest(
-            request.FlightId,
-            request.Passenger.FirstName,
-            request.Passenger.LastName,
-            request.Passenger.Email,
-            request.Passenger.PassportNumber,
-            request.Passenger.DateOfBirth,
-            request.Passenger.Nationality,
-            request.SeatsCount,
-            ParseCabinClass(request.CabinClass)
-        );
-
-        var booking = await _service.CreateBookingAsync(create);
+        var booking = await _service.CreateBookingAsync(request);
         var response = booking.Adapt<FlightBookingResponse>();
 
         return CreatedAtAction(nameof(GetByReference), new { reference = booking.BookingReference }, response);
@@ -141,6 +129,18 @@ public class FlightBookingController : ControllerBase
         var bookings = await _service.GetPassengerBookingsAsync(passengerId);
         var result = bookings.Adapt<IEnumerable<FlightBookingResponse>>();
         return Ok(result);
+    }
+
+    /// <summary>
+    /// 创建预订（会自动发布领域事件到MQ）
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult> SubmitBooking([FromBody] CreateFlightBookingRequest request)
+    {
+        if (request.Passenger is null)
+            return BadRequest("缺少乘客信息");
+        var requestId = await _service.SubmitBookingAsync(request);
+        return Accepted(new { RequestId = requestId, Message = "预订提交成功，系统正在异步处理" });
     }
 
     private static CabinClass ParseCabinClass(string input)

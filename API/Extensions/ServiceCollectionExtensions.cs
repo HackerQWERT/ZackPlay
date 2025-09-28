@@ -63,7 +63,7 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         // 注册应用层服务
-        services.AddScoped<Application.FlightBooking.IFlightBookingService, Application.FlightBooking.FlightBookingService>();
+        services.AddScoped<Application.FlightBooking.FlightBookingService>();
 
         // 配置应用层 Mapster 映射
         SimplifiedMappingProfile.Configure();

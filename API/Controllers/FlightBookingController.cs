@@ -10,9 +10,9 @@ namespace ZackPlay.API.Controllers;
 [Route("api/[controller]/[action]")]
 public class FlightBookingController : ControllerBase
 {
-    private readonly IFlightBookingService _service;
+    private readonly FlightBookingService _service;
 
-    public FlightBookingController(IFlightBookingService service)
+    public FlightBookingController(FlightBookingService service)
     {
         _service = service;
     }
@@ -127,11 +127,5 @@ public class FlightBookingController : ControllerBase
         return Accepted(new { RequestId = requestId, Message = "预订提交成功，系统正在异步处理" });
     }
 
-    private static CabinClass ParseCabinClass(string input)
-    {
-        if (Enum.TryParse<CabinClass>(input, true, out var parsed))
-            return parsed;
-        return CabinClass.Economy;
-    }
 }
 

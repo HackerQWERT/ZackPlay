@@ -1,26 +1,13 @@
 using Application.Contracts;
+using Domain.Abstractions;
 using Domain.FlightBooking.Entities;
 using Domain.FlightBooking.Repositories;
 using Domain.FlightBooking.Services;
 using Domain.FlightBooking.ValueObjects;
-using Domain.Abstractions;
 
 namespace Application.FlightBooking;
 
-public interface IFlightBookingService
-{
-    Task<IEnumerable<Airport>> GetActiveAirportsAsync();
-    Task AddAirportAsync(CreateAirportRequest request);
-    Task<IEnumerable<Flight>> SearchFlightsAsync(string departureAirport, string arrivalAirport, DateTime departureDate);
-    Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateFlightBookingRequest request);
-    Task<Guid> SubmitBookingAsync(CreateFlightBookingRequest request);
-    Task<Domain.FlightBooking.Entities.FlightBooking?> GetBookingAsync(string bookingReference);
-    Task<Domain.FlightBooking.Entities.FlightBooking> ConfirmBookingAsync(string bookingReference);
-    Task<Domain.FlightBooking.Entities.FlightBooking> CancelBookingAsync(string bookingReference);
-    Task<IEnumerable<Domain.FlightBooking.Entities.FlightBooking>> GetPassengerBookingsAsync(Guid passengerId);
-}
-
-public class FlightBookingService : IFlightBookingService
+public class FlightBookingService
 {
     private readonly IAirportRepository _airportRepository;
     private readonly IFlightRepository _flightRepository;

@@ -8,9 +8,9 @@ namespace ZackPlay.API.Controllers;
 [Route("api/admin/[action]")]
 public class FlightBookingAdminController : ControllerBase
 {
-    private readonly IFlightBookingService _service;
+    private readonly FlightBookingService _service;
 
-    public FlightBookingAdminController(IFlightBookingService service)
+    public FlightBookingAdminController(FlightBookingService service)
     {
         _service = service;
     }

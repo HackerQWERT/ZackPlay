@@ -1,6 +1,8 @@
 using Application.Contracts;
+using Application.Integration.Queues;
 using Domain.Abstractions;
 using Domain.FlightBooking.Entities;
+using Domain.FlightBooking.Events;
 using Domain.FlightBooking.Repositories;
 using Domain.FlightBooking.Services;
 using Domain.FlightBooking.ValueObjects;
@@ -68,44 +70,19 @@ public class FlightBookingService
 
         var cabin = Enum.TryParse<CabinClass>(request.CabinClass, true, out var parsed) ? parsed : CabinClass.Economy;
 
-        var command = new CreateBookingCommand(
-            request.FlightId,
+        var passengerProfile = new PassengerProfile(
             request.Passenger.FirstName,
             request.Passenger.LastName,
             request.Passenger.Email,
             request.Passenger.PassportNumber,
             request.Passenger.DateOfBirth,
-            request.Passenger.Nationality,
-            request.SeatsCount,
-            cabin
-        );
+            request.Passenger.Nationality);
 
-        var booking = await _bookingDomainService.CreateBookingAsync(command);
+        var options = new BookingCreationOptions(request.FlightId, passengerProfile, request.SeatsCount, cabin);
+
+        var booking = await _bookingDomainService.CreateBookingAsync(options);
         await PublishDomainEventsAsync(booking);
         return booking;
-    }
-
-    public async Task<Guid> SubmitBookingAsync(CreateFlightBookingRequest request)
-    {
-        if (request.Passenger is null)
-            throw new ArgumentException("Passenger 信息不能为空", nameof(request));
-
-        var requestId = Guid.NewGuid();
-        var submitEvent = new Domain.FlightBooking.Events.FlightBookingSubmitedEvent(
-                requestId,
-                request.FlightId,
-                request.Passenger.FirstName,
-                request.Passenger.LastName,
-                request.Passenger.Email,
-                request.Passenger.PassportNumber,
-                request.Passenger.DateOfBirth,
-                request.Passenger.Nationality,
-                request.SeatsCount,
-                request.CabinClass,
-                DateTime.UtcNow
-            );
-        await _messageQueueService.PublishAsync("submit-booking", submitEvent);
-        return requestId;
     }
 
     public async Task<Domain.FlightBooking.Entities.FlightBooking> ConfirmBookingAsync(string bookingReference)
@@ -137,9 +114,21 @@ public class FlightBookingService
         {
             foreach (var domainEvent in aggregate.DomainEvents)
             {
-                await _messageQueueService.PublishAsync("domain-events", domainEvent);
+                var queueName = ResolveQueueName(domainEvent);
+                await _messageQueueService.PublishAsync(queueName, domainEvent);
             }
             aggregate.ClearDomainEvents();
         }
     }
+
+    private static string ResolveQueueName(IDomainEvent domainEvent) => domainEvent switch
+    {
+        FlightBookingCreatedEvent => FlightBookingQueues.BookingCreated,
+        FlightBookingConfirmedEvent => FlightBookingQueues.BookingConfirmed,
+        FlightBookingCancelledEvent => FlightBookingQueues.BookingCancelled,
+        FlightBookingPaidEvent => FlightBookingQueues.BookingPaid,
+        FlightBookingRefundedEvent => FlightBookingQueues.BookingRefunded,
+        FlightBookingCheckedInEvent => FlightBookingQueues.BookingCheckedIn,
+        _ => FlightBookingQueues.DefaultDomainQueue
+    };
 }

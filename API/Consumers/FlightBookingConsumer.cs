@@ -1,7 +1,12 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Application.Integration.Queues;
 using Domain.Abstractions;
 using Domain.FlightBooking.Events;
-using Application.FlightBooking;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace API.Consumers;
 
@@ -29,23 +34,30 @@ public class FlightBookingConsumer : BackgroundService
         _logger.LogInformation("FlightBookingConsumer started - subscribing queues");
         try
         {
-            // 队列：提交预订
-            await _messageQueueService.SubscribeAsync<FlightBookingSubmitedEvent>(
-                "submit-booking",
-                async (evt) => await SafeExecute(evt, HandleFlightBookingSubmited));
-
             // 队列：创建成功（如果有其他系统产生此事件也可直连）
             await _messageQueueService.SubscribeAsync<FlightBookingCreatedEvent>(
-                "booking-created",
+                FlightBookingQueues.BookingCreated,
                 async (evt) => await SafeExecute(evt, HandleFlightBookingCreated));
 
             await _messageQueueService.SubscribeAsync<FlightBookingConfirmedEvent>(
-                "booking-confirmed",
+                FlightBookingQueues.BookingConfirmed,
                 async (evt) => await SafeExecute(evt, HandleFlightBookingConfirmed));
 
             await _messageQueueService.SubscribeAsync<FlightBookingCancelledEvent>(
-                "booking-cancelled",
+                FlightBookingQueues.BookingCancelled,
                 async (evt) => await SafeExecute(evt, HandleFlightBookingCancelled));
+
+            await _messageQueueService.SubscribeAsync<FlightBookingPaidEvent>(
+                FlightBookingQueues.BookingPaid,
+                async (evt) => await SafeExecute(evt, HandleFlightBookingPaid));
+
+            await _messageQueueService.SubscribeAsync<FlightBookingRefundedEvent>(
+                FlightBookingQueues.BookingRefunded,
+                async (evt) => await SafeExecute(evt, HandleFlightBookingRefunded));
+
+            await _messageQueueService.SubscribeAsync<FlightBookingCheckedInEvent>(
+                FlightBookingQueues.BookingCheckedIn,
+                async (evt) => await SafeExecute(evt, HandleFlightBookingCheckedIn));
 
 
             while (!stoppingToken.IsCancellationRequested)
@@ -70,51 +82,6 @@ public class FlightBookingConsumer : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed processing {EventType}", typeof(TEvent).Name);
-        }
-    }
-
-    /// <summary>
-    /// 处理创建订单开始事件 - 调用 Application 层
-    /// </summary>
-    private async Task HandleFlightBookingSubmited(FlightBookingSubmitedEvent @event, IServiceProvider serviceProvider)
-    {
-        _logger.LogInformation("[Request:{RequestId}] Processing submission-requested event for Flight {FlightId} Seats {Seats}",
-            @event.RequestId, @event.FlightId, @event.SeatsCount);
-
-        // 真正执行业务创建：调用 Domain Service
-        var bookingDomainService = serviceProvider.GetRequiredService<Domain.FlightBooking.Services.BookingDomainService>();
-        var mq = serviceProvider.GetRequiredService<IMessageQueueService>();
-
-        try
-        {
-            var command = new Domain.FlightBooking.Services.CreateBookingCommand(
-                @event.FlightId,
-                @event.PassengerFirstName,
-                @event.PassengerLastName,
-                @event.PassengerEmail,
-                @event.PassportNumber,
-                @event.DateOfBirth,
-                @event.Nationality,
-                @event.SeatsCount,
-                Enum.TryParse<Domain.FlightBooking.ValueObjects.CabinClass>(@event.CabinClass, true, out var cabin) ? cabin : Domain.FlightBooking.ValueObjects.CabinClass.Economy
-            );
-
-            var booking = await bookingDomainService.CreateBookingAsync(command);
-
-            // 发布聚合根产生的领域事件（含 FlightBookingCreatedEvent）
-            if (booking.DomainEvents?.Any() == true)
-            {
-                foreach (var de in booking.DomainEvents)
-                {
-                    await mq.PublishAsync("domain-events", de);
-                }
-                booking.ClearDomainEvents();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[Request:{RequestId}] Failed to create booking", @event.RequestId);
-
         }
     }
 
@@ -162,6 +129,29 @@ public class FlightBookingConsumer : BackgroundService
         // - 处理退款
         // - 释放座位
         // - 发送取消通知
+
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleFlightBookingPaid(FlightBookingPaidEvent @event, IServiceProvider serviceProvider)
+    {
+        _logger.LogInformation("Handling flight booking paid: {BookingReference}, PaymentReference: {PaymentReference}",
+            @event.BookingReference, @event.PaymentReference);
+
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleFlightBookingRefunded(FlightBookingRefundedEvent @event, IServiceProvider serviceProvider)
+    {
+        _logger.LogInformation("Handling flight booking refunded: {BookingReference}, Amount: {Amount}",
+            @event.BookingReference, @event.RefundAmount);
+
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleFlightBookingCheckedIn(FlightBookingCheckedInEvent @event, IServiceProvider serviceProvider)
+    {
+        _logger.LogInformation("Handling flight booking checked-in: {BookingReference}", @event.BookingReference);
 
         await Task.CompletedTask;
     }

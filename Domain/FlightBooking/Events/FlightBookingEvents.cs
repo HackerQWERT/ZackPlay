@@ -5,22 +5,6 @@ namespace Domain.FlightBooking.Events;
 // 机票预订相关事件
 
 /// <summary>
-/// 订单提交请求事件 (提交订单) - 仅由提交入口（Producer）发布，Consumer 收到后真正执行业务创建。
-/// </summary>
-public record FlightBookingSubmitedEvent(
-    Guid RequestId,
-    Guid FlightId,
-    string PassengerFirstName,
-    string PassengerLastName,
-    string PassengerEmail,
-    string PassportNumber,
-    DateTime DateOfBirth,
-    string Nationality,
-    int SeatsCount,
-    string CabinClass,
-    DateTime RequestTime) : DomainEventBase(DateTime.UtcNow);
-
-/// <summary>
 /// 创建订单完成事件 - 当订单创建成功完成时发布
 /// </summary>
 public record FlightBookingCreatedEvent(

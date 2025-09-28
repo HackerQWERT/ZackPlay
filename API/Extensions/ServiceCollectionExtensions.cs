@@ -79,7 +79,7 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddDomainServices(this IServiceCollection services)
     {
         // 注册领域服务
-        services.AddScoped<IBookingDomainService, BookingDomainService>();
+        services.AddScoped<BookingDomainService>();
 
 
         return services;

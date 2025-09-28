@@ -82,7 +82,7 @@ public class FlightBookingConsumer : BackgroundService
             @event.RequestId, @event.FlightId, @event.SeatsCount);
 
         // 真正执行业务创建：调用 Domain Service
-        var bookingDomainService = serviceProvider.GetRequiredService<Domain.FlightBooking.Services.IBookingDomainService>();
+        var bookingDomainService = serviceProvider.GetRequiredService<Domain.FlightBooking.Services.BookingDomainService>();
         var mq = serviceProvider.GetRequiredService<IMessageQueueService>();
 
         try

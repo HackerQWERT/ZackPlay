@@ -13,7 +13,7 @@ public class FlightBookingService
     private readonly IFlightRepository _flightRepository;
     private readonly IPassengerRepository _passengerRepository; // 领域服务内部可能用到
     private readonly IFlightBookingRepository _bookingRepository;
-    private readonly IBookingDomainService _bookingDomainService;
+    private readonly BookingDomainService _bookingDomainService;
     private readonly IMessageQueueService _messageQueueService;
 
     public FlightBookingService(
@@ -21,7 +21,7 @@ public class FlightBookingService
         IFlightRepository flightRepository,
         IPassengerRepository passengerRepository,
         IFlightBookingRepository bookingRepository,
-        IBookingDomainService bookingDomainService,
+        BookingDomainService bookingDomainService,
         IMessageQueueService messageQueueService)
     {
         _airportRepository = airportRepository;

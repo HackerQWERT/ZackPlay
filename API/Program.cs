@@ -1,4 +1,5 @@
 using ZackPlay.Extensions;
+using ZackPlay.Entry;
 using Scalar.AspNetCore;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -40,6 +41,7 @@ app.MapControllers();
 
 // 配置 Hangfire
 app.UseHangfireDashboard("/hangfire", app.Services.GetRequiredService<DashboardOptions>());
+await HangfireJobRegistrar.ConfigureAsync(app);
 
 app.UseCors(builder =>
 {

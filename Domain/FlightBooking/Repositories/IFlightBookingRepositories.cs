@@ -18,9 +18,11 @@ public interface IFlightRepository
     Task<Flight?> GetByFlightNumberAsync(string flightNumber, DateTime departureDate);
     Task<IEnumerable<Flight>> SearchAsync(string departureAirport, string arrivalAirport, DateTime departureDate);
     Task<IEnumerable<Flight>> GetByAirlineAsync(string airlineCode);
+    Task<IEnumerable<Flight>> GetByDepartureDateRangeAsync(DateTime startDateInclusive, DateTime endDateInclusive);
     Task AddAsync(Flight flight);
     Task UpdateAsync(Flight flight);
     Task<bool> ExistsAsync(string flightNumber, DateTime departureDate);
+    Task DeleteByDepartureBeforeAsync(DateTime cutoffDate);
 }
 
 public interface IPassengerRepository

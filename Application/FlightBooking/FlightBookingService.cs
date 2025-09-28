@@ -40,6 +40,24 @@ public class FlightBookingService
         await _airportRepository.AddAsync(airport);
     }
 
+    public async Task AddFlightAsync(CreateFlightRequest request)
+    {
+        var flight = new Flight(
+            request.FlightNumber,
+            request.AirlineCode,
+            request.AirlineName,
+            request.DepartureAirportCode,
+            request.DepartureTime,
+            request.DepartureTerminal,
+            request.ArrivalAirportCode,
+            request.ArrivalTime,
+            request.ArrivalTerminal,
+            request.AircraftType,
+            request.TotalSeats,
+            request.BasePrice);
+        await _flightRepository.AddAsync(flight);
+    }
+
     public async Task<IEnumerable<Flight>> SearchFlightsAsync(string departureAirport, string arrivalAirport, DateTime departureDate)
         => await _flightRepository.SearchAsync(departureAirport, arrivalAirport, departureDate);
 
@@ -55,9 +73,9 @@ public class FlightBookingService
             request.Passenger.FirstName,
             request.Passenger.LastName,
             request.Passenger.Email,
-            request.PassportNumber,
-            request.DateOfBirth,
-            request.Nationality,
+            request.Passenger.PassportNumber,
+            request.Passenger.DateOfBirth,
+            request.Passenger.Nationality,
             request.SeatsCount,
             cabin
         );
@@ -79,9 +97,9 @@ public class FlightBookingService
                 request.Passenger.FirstName,
                 request.Passenger.LastName,
                 request.Passenger.Email,
-                request.PassportNumber,
-                request.DateOfBirth,
-                request.Nationality,
+                request.Passenger.PassportNumber,
+                request.Passenger.DateOfBirth,
+                request.Passenger.Nationality,
                 request.SeatsCount,
                 request.CabinClass,
                 DateTime.UtcNow

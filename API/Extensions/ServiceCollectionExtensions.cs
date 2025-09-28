@@ -12,6 +12,7 @@ using Domain.FlightBooking.Repositories;
 using Mapster;
 using Infrastructure.Mapping;
 using Application.Mapping;
+using Application.FlightBooking;
 using Domain.FlightBooking.Services;
 using API.Consumers;
 
@@ -63,7 +64,8 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         // 注册应用层服务
-        services.AddScoped<Application.FlightBooking.FlightBookingService>();
+        services.AddScoped<FlightBookingService>();
+        services.AddScoped<FlightDataMockService>();
 
         // 配置应用层 Mapster 映射
         SimplifiedMappingProfile.Configure();

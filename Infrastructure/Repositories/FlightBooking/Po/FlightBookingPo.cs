@@ -65,7 +65,8 @@ public class FlightPo
 
     public Flight ToDomain()
     {
-        var flight = new Flight(
+        return Flight.Rehydrate(
+            Id,
             FlightNumber,
             AirlineCode,
             AirlineName,
@@ -77,18 +78,12 @@ public class FlightPo
             ArrivalTerminal,
             AircraftType,
             TotalSeats,
-            BasePrice
+            AvailableSeats,
+            BasePrice,
+            (FlightStatus)Status,
+            CreatedAt,
+            UpdatedAt
         );
-
-        // 设置运行时状态
-        flight.UpdateStatus((FlightStatus)Status);
-        var seatsUsed = TotalSeats - AvailableSeats;
-        if (seatsUsed > 0)
-        {
-            flight.BookSeats(seatsUsed);
-        }
-
-        return flight;
     }
 
     public static FlightPo FromDomain(Flight flight)

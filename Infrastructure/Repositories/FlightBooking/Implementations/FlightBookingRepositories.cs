@@ -108,6 +108,19 @@ public class FlightRepository : IFlightRepository
         return pos.Select(po => po.ToDomain());
     }
 
+    public async Task<IEnumerable<Flight>> GetByDepartureDateRangeAsync(DateTime startDateInclusive, DateTime endDateInclusive)
+    {
+        var start = startDateInclusive.Date;
+        var endExclusive = endDateInclusive.Date.AddDays(1);
+
+        var pos = await _context.Flights
+            .Where(f => f.DepartureTime >= start && f.DepartureTime < endExclusive)
+            .OrderBy(f => f.DepartureTime)
+            .ToListAsync();
+
+        return pos.Select(po => po.ToDomain());
+    }
+
     public async Task AddAsync(Flight flight)
     {
         var po = FlightPo.FromDomain(flight);
@@ -127,6 +140,22 @@ public class FlightRepository : IFlightRepository
         return await _context.Flights
             .AnyAsync(f => f.FlightNumber == flightNumber.ToUpper()
                         && f.DepartureTime.Date == departureDate.Date);
+    }
+
+    public async Task DeleteByDepartureBeforeAsync(DateTime cutoffDate)
+    {
+        var cutoff = cutoffDate.Date;
+        var expiredFlights = await _context.Flights
+            .Where(f => f.DepartureTime.Date < cutoff)
+            .ToListAsync();
+
+        if (expiredFlights.Count == 0)
+        {
+            return;
+        }
+
+        _context.Flights.RemoveRange(expiredFlights);
+        await _context.SaveChangesAsync();
     }
 }
 

@@ -74,6 +74,55 @@ public class Flight : IAggregateRoot
         BasePrice = basePrice;
     }
 
+    public static Flight Rehydrate(
+        Guid id,
+        string flightNumber,
+        string airlineCode,
+        string airlineName,
+        string departureAirportCode,
+        DateTime departureTime,
+        string departureTerminal,
+        string arrivalAirportCode,
+        DateTime arrivalTime,
+        string arrivalTerminal,
+        string aircraftType,
+        int totalSeats,
+        int availableSeats,
+        decimal basePrice,
+        FlightStatus status,
+        DateTime createdAt,
+        DateTime? updatedAt)
+    {
+        if (availableSeats < 0 || availableSeats > totalSeats)
+            throw new ArgumentException("可用座位数必须介于 0 和总座位数之间", nameof(availableSeats));
+
+        var flight = new Flight();
+        flight.ValidateInput(flightNumber, airlineCode, airlineName, departureAirportCode, arrivalAirportCode, aircraftType, totalSeats, basePrice);
+
+        if (arrivalTime <= departureTime)
+            throw new ArgumentException("到达时间必须晚于出发时间");
+
+        flight.Id = id;
+        flight.FlightNumber = flightNumber.ToUpper();
+        flight.AirlineCode = airlineCode.ToUpper();
+        flight.AirlineName = airlineName;
+        flight.DepartureAirportCode = departureAirportCode.ToUpper();
+        flight.DepartureTime = departureTime;
+        flight.DepartureTerminal = departureTerminal;
+        flight.ArrivalAirportCode = arrivalAirportCode.ToUpper();
+        flight.ArrivalTime = arrivalTime;
+        flight.ArrivalTerminal = arrivalTerminal;
+        flight.AircraftType = aircraftType;
+        flight.TotalSeats = totalSeats;
+        flight.AvailableSeats = availableSeats;
+        flight.BasePrice = basePrice;
+        flight.Status = status;
+        flight.CreatedAt = createdAt;
+        flight.UpdatedAt = updatedAt;
+
+        return flight;
+    }
+
     public bool CanBook(int requestedSeats)
     {
         return Status == FlightStatus.Scheduled && AvailableSeats >= requestedSeats;
@@ -107,6 +156,15 @@ public class Flight : IAggregateRoot
     {
         if (newPrice < 0) throw new ArgumentException("价格不能为负数");
         BasePrice = newPrice;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AdjustAvailableSeats(int newAvailableSeats)
+    {
+        if (newAvailableSeats < 0 || newAvailableSeats > TotalSeats)
+            throw new ArgumentException("可用座位数必须介于 0 和总座位数之间", nameof(newAvailableSeats));
+
+        AvailableSeats = newAvailableSeats;
         UpdatedAt = DateTime.UtcNow;
     }
 

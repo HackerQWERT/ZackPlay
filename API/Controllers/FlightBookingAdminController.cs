@@ -27,4 +27,17 @@ public class FlightBookingAdminController : ControllerBase
         await _service.AddAirportAsync(request);
         return Ok(new { Message = "机场添加成功" });
     }
+
+    /// <summary>
+    /// 上传新航班（管理员接口）
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> UploadFlight([FromBody] CreateFlightRequest request)
+    {
+        if (request == null)
+            return BadRequest("请求体不能为空");
+
+        await _service.AddFlightAsync(request);
+        return Ok(new { Message = "航班上传成功" });
+    }
 }

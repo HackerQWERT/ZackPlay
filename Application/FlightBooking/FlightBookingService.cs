@@ -10,6 +10,7 @@ namespace Application.FlightBooking;
 public interface IFlightBookingService
 {
     Task<IEnumerable<Airport>> GetActiveAirportsAsync();
+    Task AddAirportAsync(CreateAirportRequest request);
     Task<IEnumerable<Flight>> SearchFlightsAsync(string departureAirport, string arrivalAirport, DateTime departureDate);
     Task<Domain.FlightBooking.Entities.FlightBooking> CreateBookingAsync(CreateFlightBookingRequest request);
     Task<Guid> SubmitBookingAsync(CreateFlightBookingRequest request);
@@ -45,6 +46,12 @@ public class FlightBookingService : IFlightBookingService
     }
 
     public async Task<IEnumerable<Airport>> GetActiveAirportsAsync() => await _airportRepository.GetActivateAirportsAsync();
+
+    public async Task AddAirportAsync(CreateAirportRequest request)
+    {
+        var airport = new Airport(request.Code, request.Name, request.City, request.Country, request.TimeZone);
+        await _airportRepository.AddAsync(airport);
+    }
 
     public async Task<IEnumerable<Flight>> SearchFlightsAsync(string departureAirport, string arrivalAirport, DateTime departureDate)
         => await _flightRepository.SearchAsync(departureAirport, arrivalAirport, departureDate);

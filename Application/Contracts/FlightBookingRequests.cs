@@ -56,3 +56,15 @@ public class CreatePassengerRequest
     public string Email { get; set; } = default!;
     public string PhoneNumber { get; set; } = default!;
 }
+
+/// <summary>
+/// 创建机场请求
+/// </summary>
+public class CreateAirportRequest
+{
+    public string Code { get; set; } = default!; // 机场三字码，如 PEK
+    public string Name { get; set; } = default!; // 机场名称
+    public string City { get; set; } = default!; // 所在城市
+    public string Country { get; set; } = default!; // 所在国家
+    public string TimeZone { get; set; } = default!; // 时区，如 "Asia/Shanghai"
+}

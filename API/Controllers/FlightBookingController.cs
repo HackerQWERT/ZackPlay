@@ -28,22 +28,6 @@ public class FlightBookingController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// 搜索航班（简单查询）
-    /// </summary>
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<FlightSearchResponse>>> Search([FromQuery] string from, [FromQuery] string to, [FromQuery] string date)
-    {
-        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to) || string.IsNullOrWhiteSpace(date))
-            return BadRequest("查询参数不完整");
-
-        if (!DateTime.TryParse(date, out var departureDate))
-            return BadRequest("日期格式不正确");
-
-        var flights = await _service.SearchFlightsAsync(from, to, departureDate);
-        var result = flights.Adapt<IEnumerable<FlightSearchResponse>>();
-        return Ok(result);
-    }
 
     /// <summary>
     /// 搜索航班（复杂请求体）

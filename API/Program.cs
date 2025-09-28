@@ -1,5 +1,7 @@
 using ZackPlay.Extensions;
 using Scalar.AspNetCore;
+using Hangfire;
+using Hangfire.Dashboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +30,24 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
 app.MapControllers();
+
+
+// 配置 Hangfire
+app.UseHangfireDashboard("/hangfire", app.Services.GetRequiredService<DashboardOptions>());
+
+app.UseCors(builder =>
+{
+    builder
+    .AllowAnyOrigin()
+    .AllowAnyHeader()
+    .AllowAnyMethod();
+});
 
 app.Run();
 

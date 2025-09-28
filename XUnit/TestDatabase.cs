@@ -30,10 +30,5 @@ public class TestDatabase : BaseTest
 
         _output.WriteLine(result.ToString());
     }
-    [Fact]
-    public async Task TestPlay()
-    {
-        bool result = "Y" == "Y";
-        _output.WriteLine(result.ToString());
-    }
+
 }

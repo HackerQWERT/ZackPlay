@@ -30,11 +30,12 @@ public static class ServiceCollectionExtensions
         // 应用层服务
         services.AddApplicationServices();
 
-        // 基础设施服务          
+        // 基础设施服务
         services.AddInfrastructureServices(configuration);
 
+
         // API 层服务
-        services.AddApiServices();
+        services.AddApiServices(configuration);
 
         return services;
     }
@@ -45,11 +46,13 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// 配置应用层服务 - 机票预订业务
     /// </summary>
-    private static IServiceCollection AddApiServices(this IServiceCollection services)
+    private static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
     {
 
         // 注册后台服务
         services.AddHostedService<FlightBookingConsumer>();
+        // Hangfire 服务
+        services.AddHangfireServices(configuration);
 
         return services;
     }

@@ -92,12 +92,12 @@ public class FlightBookingController : ControllerBase
     /// 取消预订
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult<FlightBookingResponse>> Cancel([FromQuery] string reference, [FromQuery] string? reason = null)
+    public async Task<ActionResult<FlightBookingResponse>> Cancel([FromBody] CancelFlightBookingRequest cancelFlightBookingRequest)
     {
-        if (string.IsNullOrWhiteSpace(reference))
+        if (string.IsNullOrWhiteSpace(cancelFlightBookingRequest.Reference))
             return BadRequest("reference 不能为空");
 
-        var booking = await _service.CancelBookingAsync(reference);
+        var booking = await _service.CancelBookingAsync(cancelFlightBookingRequest.Reference);
         var response = booking.Adapt<FlightBookingResponse>();
         return Ok(response);
     }

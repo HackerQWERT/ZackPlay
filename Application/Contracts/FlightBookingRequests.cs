@@ -84,3 +84,16 @@ public class CreateFlightRequest
     public int TotalSeats { get; set; } // 总座位数
     public decimal BasePrice { get; set; } // 基础价格
 }
+
+/// <summary>
+/// cancel 航班预订请求
+/// </summary>
+/// <remarks>
+/// 包含取消原因等信息
+/// </remarks>
+public class CancelFlightBookingRequest
+{
+    public string Reason { get; set; } = string.Empty;
+    public string Reference { get; set; } = string.Empty;
+
+}

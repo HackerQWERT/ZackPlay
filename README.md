@@ -80,6 +80,11 @@ PUT    /api/subscriptions/{id}                 # 更新订阅
 DELETE /api/subscriptions/{id}                 # 删除订阅
 ```
 
+### 用户认证
+```
+POST   /api/auth/login                         # 用户登录，返回 JWT 令牌
+```
+
 ## 环境要求
 
 ### 开发环境
@@ -137,6 +142,11 @@ DELETE /api/subscriptions/{id}                 # 删除订阅
    ```
    https://localhost:7xxx/openapi/v1.json
    ```
+
+5. **默认管理员账号**
+   - 用户名：`admin`
+   - 初始密码：`Admin@123456`
+   - 登录后请立即调用更改密码接口或在数据库中重置密码，以确保安全。
 
 ## 示例数据
 

@@ -9,12 +9,19 @@ using Infrastructure.Repositories.FlightBooking.Implementations;
 using Infrastructure.Services;
 using Domain.Abstractions;
 using Domain.FlightBooking.Repositories;
+using Domain.User.Repositories;
 using Mapster;
 using Infrastructure.Mapping;
 using Application.Mapping;
 using Application.FlightBooking;
 using Domain.FlightBooking.Services;
 using API.Consumers;
+using Application.Auth;
+using Infrastructure.Repositories.User.Implementations;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace ZackPlay.Extensions;
 
@@ -25,6 +32,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddAllServices(this IServiceCollection services, IConfiguration configuration)
     {
+        // 配置选项
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+
         // 领域层服务
         services.AddDomainServices();
 
@@ -49,6 +59,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddJwtAuthentication(configuration);
 
         // 注册后台服务
         services.AddHostedService<FlightBookingConsumer>();
@@ -66,6 +77,12 @@ public static class ServiceCollectionExtensions
         // 注册应用层服务
         services.AddScoped<FlightBookingService>();
         services.AddScoped<FlightDataMockService>();
+
+        // 注册认证服务
+        services.AddScoped<AuthService>();
+
+        // 注册密码哈希器
+        services.AddScoped<IPasswordHasher<Domain.User.Entities.User>, PasswordHasher<Domain.User.Entities.User>>();
 
         // 配置应用层 Mapster 映射
         SimplifiedMappingProfile.Configure();
@@ -116,6 +133,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPassengerRepository, PassengerRepository>();
         services.AddScoped<IFlightBookingRepository, FlightBookingRepository>();
 
+        // 注册用户仓储
+        services.AddScoped<IUserRepository, UserRepository>();
+
         // 配置Mapster
         services.AddMapster();
 
@@ -127,4 +147,35 @@ public static class ServiceCollectionExtensions
     #endregion
 
 
+    /// <summary>
+    /// 配置JWT认证
+    /// </summary>
+    private static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtSettings = configuration.GetSection("Jwt");
+        var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "default-secret-key");
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidAudience = jwtSettings["Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(key)
+            };
+        });
+
+        services.AddAuthorization();
+
+        return services;
+    }
 }

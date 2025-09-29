@@ -130,8 +130,30 @@ public class FlightRepository : IFlightRepository
 
     public async Task UpdateAsync(Flight flight)
     {
-        var po = FlightPo.FromDomain(flight);
-        _context.Flights.Update(po);
+        var existing = await _context.Flights.FindAsync(flight.Id);
+        if (existing != null)
+        {
+            existing.FlightNumber = flight.FlightNumber;
+            existing.AirlineCode = flight.AirlineCode;
+            existing.AirlineName = flight.AirlineName;
+            existing.DepartureAirportCode = flight.DepartureAirportCode;
+            existing.DepartureTime = flight.DepartureTime;
+            existing.DepartureTerminal = flight.DepartureTerminal;
+            existing.ArrivalAirportCode = flight.ArrivalAirportCode;
+            existing.ArrivalTime = flight.ArrivalTime;
+            existing.ArrivalTerminal = flight.ArrivalTerminal;
+            existing.AircraftType = flight.AircraftType;
+            existing.TotalSeats = flight.TotalSeats;
+            existing.AvailableSeats = flight.AvailableSeats;
+            existing.BasePrice = flight.BasePrice;
+            existing.Status = (int)flight.Status;
+            existing.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            var po = FlightPo.FromDomain(flight);
+            await _context.Flights.AddAsync(po);
+        }
         await _context.SaveChangesAsync();
     }
 

@@ -70,13 +70,19 @@ public class FlightBookingService
 
         var cabin = Enum.TryParse<CabinClass>(request.CabinClass, true, out var parsed) ? parsed : CabinClass.Economy;
 
+        var gender = Enum.TryParse<Gender>(request.Passenger.Gender, true, out var genderParsed) ? genderParsed : Gender.Other;
+
         var passengerProfile = new PassengerProfile(
             request.Passenger.FirstName,
             request.Passenger.LastName,
             request.Passenger.Email,
             request.Passenger.PassportNumber,
             request.Passenger.DateOfBirth,
-            request.Passenger.Nationality);
+            request.Passenger.Nationality,
+            gender,
+            request.Passenger.PassportCountry,
+            request.Passenger.PassportExpiryDate,
+            request.Passenger.PhoneNumber);
 
         var options = new BookingCreationOptions(request.FlightId, passengerProfile, request.SeatsCount, cabin);
 

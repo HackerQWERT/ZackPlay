@@ -40,13 +40,13 @@ public sealed class BookingDomainService
                 passengerInfo.FirstName,
                 passengerInfo.LastName,
                 passengerInfo.DateOfBirth,
-                Gender.Other, // TODO: 从外部传入或根据业务推导
+                passengerInfo.Gender,
                 passengerInfo.PassportNumber,
-                passengerInfo.Nationality,
-                DateTime.UtcNow.AddYears(10), // TODO: 从外部传入
+                passengerInfo.PassportCountry,
+                passengerInfo.PassportExpiryDate,
                 passengerInfo.Nationality,
                 passengerInfo.Email,
-                string.Empty // TODO: 电话从外部传入
+                passengerInfo.PhoneNumber
             );
             await _passengerRepository.AddAsync(passenger);
         }
